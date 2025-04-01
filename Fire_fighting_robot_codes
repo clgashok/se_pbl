@@ -1,0 +1,124 @@
+// Motor Driver Pins
+#define ENA 9
+#define ENB 10
+#define IN1 3
+#define IN2 4
+#define IN3 5
+#define IN4 6
+
+// Flame Sensor Pins
+#define FLAME_LEFT A0
+#define FLAME_FRONT A1
+#define FLAME_RIGHT A2
+
+// Servo & Pump Relay Pins
+#include <Servo.h>
+Servo fireServo;
+#define SERVO_PIN 11
+#define PUMP 12
+
+void setup() {
+    Serial.begin(9600);
+    
+    // Motor Pins
+    pinMode(ENA, OUTPUT);
+    pinMode(ENB, OUTPUT);
+    pinMode(IN1, OUTPUT);
+    pinMode(IN2, OUTPUT);
+    pinMode(IN3, OUTPUT);
+    pinMode(IN4, OUTPUT);
+
+    // Sensor Pins
+    pinMode(FLAME_LEFT, INPUT);
+    pinMode(FLAME_FRONT, INPUT);
+    pinMode(FLAME_RIGHT, INPUT);
+
+    // Servo & Pump
+    fireServo.attach(SERVO_PIN);
+    pinMode(PUMP, OUTPUT);
+
+    digitalWrite(PUMP, LOW); // Ensure pump is off
+}
+
+void loop() {
+    int sLeft = analogRead(FLAME_LEFT);
+    int sFront = analogRead(FLAME_FRONT);
+    int sRight = analogRead(FLAME_RIGHT);
+
+    Serial.print("Left: "); Serial.print(sLeft);
+    Serial.print("\tFront: "); Serial.print(sFront);
+    Serial.print("\tRight: "); Serial.println(sRight);
+
+    if (sFront < 300) {
+        moveForward();
+        delay(500);
+        stopMotors();
+        sprayWater();
+    } 
+    else if (sLeft < 300) {
+        turnLeft();
+        delay(300);
+        moveForward();
+        delay(500);
+        stopMotors();
+        sprayWater();
+    } 
+    else if (sRight < 300) {
+        turnRight();
+        delay(300);
+        moveForward();
+        delay(500);
+        stopMotors();
+        sprayWater();
+    } 
+    else {
+        stopMotors();
+    }
+}
+
+void moveForward() {
+    digitalWrite(IN1, HIGH);
+    digitalWrite(IN2, LOW);
+    digitalWrite(IN3, HIGH);
+    digitalWrite(IN4, LOW);
+    analogWrite(ENA, 150);
+    analogWrite(ENB, 150);
+}
+
+void turnLeft() {
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, HIGH);
+    digitalWrite(IN3, HIGH);
+    digitalWrite(IN4, LOW);
+}
+
+void turnRight() {
+    digitalWrite(IN1, HIGH);
+    digitalWrite(IN2, LOW);
+    digitalWrite(IN3, LOW);
+    digitalWrite(IN4, HIGH);
+}
+
+void stopMotors() {
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, LOW);
+    digitalWrite(IN3, LOW);
+    digitalWrite(IN4, LOW);
+}
+
+void sprayWater() {
+    digitalWrite(PUMP, HIGH);  // Turn on pump
+    for (int angle = 90; angle <= 140; angle += 5) {
+        fireServo.write(angle);
+        delay(50);
+    }
+    for (int angle = 140; angle >= 40; angle -= 5) {
+        fireServo.write(angle);
+        delay(50);
+    }
+    for (int angle = 40; angle <= 90; angle += 5) {
+        fireServo.write(angle);
+        delay(50);
+    }
+    digitalWrite(PUMP, LOW);   // Turn off pump
+}
